@@ -1,0 +1,58 @@
+#! env ruby 
+
+require "date"
+require 'mechanize'
+require "json"
+require 'colorize'
+
+
+mechanize = Mechanize.new
+
+page = mechanize.get('https://signin.intra.42.fr/users/sign_in')
+
+form = page.forms.first
+
+form['user[login]'] = ENV['LOGNAME']
+form['user[password]'] = ENV['PASS42']
+
+page = form.submit
+
+sleep(2);
+
+ads = page.search("svg");
+
+ad = ads[0].attributes["data-location-graph"].value;
+
+json = JSON.parse(ad, symbolize_names: true);  #=> {key: :value}
+
+ss = 0
+mm = 0
+hh = 0
+total = 0
+
+json.each do |k, v|
+  today = Date.today()
+  d = Date.parse("#{k}")
+  # Si on veut selectionner un mois en particuler, remplacer today.mon par le chiffre du mois : Janvier = 1
+  if (d.mon == today.mon)
+    v = v.split(".")[0]
+
+    s = v.split(":")[2].to_i
+    ss = ss + s
+    m = v.split(":")[1].to_i
+    mm = mm + m
+    h = v.split(":")[0].to_i
+    hh = hh + h
+	puts "#{k} => #{v}".colorize(:green)
+
+  end
+end
+
+puts "hours : #{hh} - minutes : #{mm} - seconds : #{ss} ".colorize(:yellow)
+
+mm = mm + (ss / 60)
+hh = hh + (mm / 60)
+
+
+puts "Totale time : #{hh}:#{mm % 60}:#{ss % 60}".colorize(:cyan)
+
